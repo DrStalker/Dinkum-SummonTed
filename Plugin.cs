@@ -15,7 +15,7 @@ public class Plugin : BaseUnityPlugin
     public Plugin()
     {
 
-    _hotKey        = Config.Bind("General", "HotKey",        KeyCode.F11,"Press to summon Ted");
+    _hotKey = Config.Bind("General", "HotKey", KeyCode.F11,"Press to summon Ted");
 
     }
     
@@ -48,21 +48,22 @@ public class Plugin : BaseUnityPlugin
             if (!iFoundTed) 
             {
                 //Summon Ted
-                AnimalManager.manage.trapperCanSpawn = false;  //so he doesn't spawn a second time
 
+                AnimalManager.manage.trapperCanSpawn = false;  //so he doesn't spawn a second time
+                
+                //Place him on top of the player
                 //Even though locations are done using vector3 the x & y paramaters given to functions get multiplied by 2 to form the vector and also Y is stored in the vector's Z.
                 playerX=(int)(NetworkMapSharer.share.localChar.transform.position.x/2);
                 playerY=(int)(NetworkMapSharer.share.localChar.transform.position.z/2);
 
-                Logger.LogInfo(String.Format("Player location: {0} {1}",playerX,playerY));
-                NotificationManager.manage.createChatNotification(String.Format("Player location: {0} {1}",playerX,playerY));
-
-
+                //spawn NPC & play the Ted Selly whistle
                 NPCManager.manage.npcsOnMap.Add(new NPCMapAgent(5, playerX, playerY));
                 NetworkMapSharer.share.RpcPlayTrapperSound(new Vector3((float)(playerX * 2), 0f, (float)(playerY * 2)));
                 
                 NotificationManager.manage.createChatNotification(String.Format("Ted Selly has been summoned!"));
             }
+            // TODO: else move Ted to player's position.
+
             
         }
 
