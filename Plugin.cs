@@ -32,7 +32,6 @@ public class Plugin : BaseUnityPlugin
             Logger.LogInfo($"Attempting to summon Ted");
             int playerX=0;
             int playerY=0;
-            int z=0;
             bool iFoundTed=false;
 
             // Is Ted already here?
