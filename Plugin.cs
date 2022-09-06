@@ -1,74 +1,67 @@
-﻿using System;
-using System.Collections;
-using System.Linq;
-using BepInEx;
-using BepInEx.Configuration;
-using Mirror;
-using UnityEngine;
-
-namespace SummonTed;
-
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
-public class Plugin : BaseUnityPlugin
+﻿namespace SummonTed
 {
-    private readonly ConfigEntry<KeyCode> _hotKey;
-    public Plugin()
-    {
+    using System;
+    using BepInEx;
+    using BepInEx.Configuration;
+    using UnityEngine;
 
-    _hotKey = Config.Bind("General", "HotKey", KeyCode.F11,"Press to summon Ted");
-
-    }
-    
-    private void Awake()
+    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    public class Plugin : BaseUnityPlugin
     {
-        // Plugin startup logic
-        Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
-    }
+        private readonly ConfigEntry<KeyCode> _hotKey;
+        private static readonly int TedSellyNpcNumber = 5;
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(_hotKey.Value))
+        public Plugin()
         {
-            Logger.LogInfo($"Attempting to summon Ted");
-            int playerX=0;
-            int playerY=0;
-            bool iFoundTed=false;
-
-            // Is Ted already here?
-            for (int i = 0; i < NPCManager.manage.npcsOnMap.Count; i++)
-            {   
-                if (NPCManager.manage.npcsOnMap[i].npcId==5)
-                {
-                    iFoundTed=true;
-                    NotificationManager.manage.createChatNotification("Ted Selly is already somewhere on the island");
-                }
-            }
-
-            if (!iFoundTed) 
-            {
-                //Summon Ted
-
-                AnimalManager.manage.trapperCanSpawn = false;  //so he doesn't spawn a second time
-                
-                //Place him on top of the player
-                //Even though locations are done using vector3 the x & y paramaters given to functions get multiplied by 2 to form the vector and also Y is stored in the vector's Z.
-                playerX=(int)(NetworkMapSharer.share.localChar.transform.position.x/2);
-                playerY=(int)(NetworkMapSharer.share.localChar.transform.position.z/2);
-
-                //spawn NPC & play the Ted Selly whistle
-                NPCManager.manage.npcsOnMap.Add(new NPCMapAgent(5, playerX, playerY));
-                NetworkMapSharer.share.RpcPlayTrapperSound(new Vector3((float)(playerX * 2), 0f, (float)(playerY * 2)));
-                
-                NotificationManager.manage.createChatNotification(String.Format("Ted Selly has been summoned!"));
-            }
-            // TODO: else move Ted to player's position.
-
-            
+            _hotKey = Config.Bind("General", "HotKey", KeyCode.F11, "Press to summon Ted");
         }
 
+        private void Awake()
+        {
+            Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(_hotKey.Value))
+            {
+                AnimalManager.manage.trapperCanSpawn = false; //so he doesn't spawn a second time
+            
+                Logger.LogInfo($"Attempting to summon Ted");
+                
+                FindTed();
+
+                GetPlayerXYCoodinates(out var playerX, out var playerY);
+
+                SpawnTedSelly(playerX, playerY);
+            }
+        }
+
+        private static void FindTed()
+        {
+            foreach (var npc in NPCManager.manage.npcsOnMap)
+            {
+                if (npc.npcId == TedSellyNpcNumber)
+                {
+                    npc.moveOffNavMesh(NetworkMapSharer.share.localChar.transform.position);
+                }
+            }
+        }
+
+        private static void SpawnTedSelly(int playerX, int playerY)
+        {
+            NPCManager.manage.npcsOnMap.Add(new NPCMapAgent(TedSellyNpcNumber, playerX, playerY));
+            NetworkMapSharer.share.RpcPlayTrapperSound(new Vector3((float)(playerX * 2), 0f, (float)(playerY * 2)));
+
+            NotificationManager.manage.createChatNotification(String.Format("Ted Selly has been summoned!"));
+        }
+
+
+        private static void GetPlayerXYCoodinates(out int playerX, out int playerY)
+        {
+            var position = NetworkMapSharer.share.localChar.transform.position;
+            playerX = (int)(position.x / 2);
+            playerY = (int)(position.z / 2);
+        }
     }
-
-
-
 }
-
